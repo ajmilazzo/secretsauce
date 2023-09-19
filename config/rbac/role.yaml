@@ -1,0 +1,70 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - fancysecrets.secretsauce.anthonymilazzo.com
+  resources:
+  - randomsecrets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - fancysecrets.secretsauce.anthonymilazzo.com
+  resources:
+  - randomsecrets/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - fancysecrets.secretsauce.anthonymilazzo.com
+  resources:
+  - randomsecrets/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - fancysecrets.secretsauce.anthonymilazzo.com
+  resources:
+  - secretpolicies
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - fancysecrets.secretsauce.anthonymilazzo.com
+  resources:
+  - secretpolicies/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - fancysecrets.secretsauce.anthonymilazzo.com
+  resources:
+  - secretpolicies/status
+  verbs:
+  - get
+  - patch
+  - update
