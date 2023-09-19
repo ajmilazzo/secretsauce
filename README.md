@@ -2,7 +2,7 @@
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/ajmilazzo/secretsauce)
 
-![spicy](https://github.com/ajmilazzo/secretsauce/assets/18070948/56f818ce-7b65-4a5f-8128-c46ecf8566ae)
+![spicy](https://github.com/ajmilazzo/secretsauce/assets/18070948/cfd3e747-9268-474b-8511-ef911a5d27cc)
 
 ## Overview
 
