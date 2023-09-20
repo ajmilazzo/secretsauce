@@ -49,6 +49,7 @@ func (r *RandomSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	var randomSecret fancysecretsv1.RandomSecret
 	if err := r.Get(ctx, req.NamespacedName, &randomSecret); err != nil {
+		log.Error(err, "RandomSecret not found")
 		// Handle not found error or requeue upon other errors
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
@@ -58,20 +59,26 @@ func (r *RandomSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	// Finalizer for handling deletion of secrets
 	if randomSecret.ObjectMeta.DeletionTimestamp.IsZero() {
 		if !controllerutil.ContainsFinalizer(&randomSecret, finalizerName) {
+			// add the finalizer
 			controllerutil.AddFinalizer(&randomSecret, finalizerName)
 			if err := r.Update(ctx, &randomSecret); err != nil {
+				log.Error(err, "Failed to add finalizer")
 				return ctrl.Result{}, err
 			}
 		}
 	} else {
 		if controllerutil.ContainsFinalizer(&randomSecret, finalizerName) {
 			// delete the secret resource
+			log.Info("Deleting secret resource")
 			if err := r.deleteSecretResource(ctx, &randomSecret); err != nil {
+				log.Error(err, "Failed to delete secret resource")
 				return ctrl.Result{}, err
 			}
 
+			// remove the finalizer
 			controllerutil.RemoveFinalizer(&randomSecret, finalizerName)
 			if err := r.Update(ctx, &randomSecret); err != nil {
+				log.Error(err, "Failed to remove finalizer")
 				return ctrl.Result{}, err
 			}
 		}
@@ -79,7 +86,10 @@ func (r *RandomSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{}, nil
 	}
 
+	// Create or update the secret
+	log.Info("Creating or updating secret")
 	if err := r.ensureSecretExists(ctx, &randomSecret); err != nil {
+		log.Error(err, "Failed to reconcile secret")
 		return ctrl.Result{}, err
 	}
 
