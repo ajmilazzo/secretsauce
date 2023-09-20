@@ -53,14 +53,6 @@ var _ = Describe("RandomSecret controller", func() {
 		createdSecret = &corev1.Secret{}
 	})
 
-	AfterEach(func() {
-		_ = k8sClient.Get(ctx, randomSecretKey, createdRandomSecret)
-		_ = k8sClient.Delete(ctx, createdRandomSecret)
-
-		_ = k8sClient.Get(ctx, secretKey, createdSecret)
-		_ = k8sClient.Delete(ctx, createdSecret)
-	})
-
 	Context("RandomSecret Tests", func() {
 		It("should create the RandomSecret", func() {
 			Expect(k8sClient.Create(ctx, randomSecret)).Should(Succeed())
@@ -113,6 +105,24 @@ var _ = Describe("RandomSecret controller", func() {
 
 			// Verify the length has changed
 			Expect(len(string(createdSecret.Data["value"]))).Should(Equal(20))
+		})
+
+		It("should delete the Secret", func() {
+			_ = k8sClient.Create(ctx, randomSecret)
+
+			Expect(k8sClient.Get(ctx, randomSecretKey, createdRandomSecret)).Should(Succeed())
+
+			Eventually(func() error {
+				return k8sClient.Get(ctx, secretKey, createdSecret)
+			}, timeout, interval).Should(Succeed())
+
+			// Delete the RandomSecret
+			Expect(k8sClient.Delete(ctx, createdRandomSecret)).Should(Succeed())
+
+			// Wait for the Secret to be deleted
+			Eventually(func() error {
+				return k8sClient.Get(ctx, secretKey, createdSecret)
+			}, timeout, interval).ShouldNot(Succeed())
 		})
 	})
 })

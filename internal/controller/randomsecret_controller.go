@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	fancysecretsv1 "github.com/anthonymilazzo/secretsauce/api/v1"
@@ -50,6 +51,32 @@ func (r *RandomSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	if err := r.Get(ctx, req.NamespacedName, &randomSecret); err != nil {
 		// Handle not found error or requeue upon other errors
 		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	finalizerName := "fancysecrets.secretsauce.anthonymilazzo.com/finalizer"
+
+	// Finalizer for handling deletion of secrets
+	if randomSecret.ObjectMeta.DeletionTimestamp.IsZero() {
+		if !controllerutil.ContainsFinalizer(&randomSecret, finalizerName) {
+			controllerutil.AddFinalizer(&randomSecret, finalizerName)
+			if err := r.Update(ctx, &randomSecret); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+	} else {
+		if controllerutil.ContainsFinalizer(&randomSecret, finalizerName) {
+			// delete the secret resource
+			if err := r.deleteSecretResource(ctx, &randomSecret); err != nil {
+				return ctrl.Result{}, err
+			}
+
+			controllerutil.RemoveFinalizer(&randomSecret, finalizerName)
+			if err := r.Update(ctx, &randomSecret); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+
+		return ctrl.Result{}, nil
 	}
 
 	if err := r.ensureSecretExists(ctx, &randomSecret); err != nil {
@@ -95,4 +122,15 @@ func (r *RandomSecretReconciler) ensureSecretExists(ctx context.Context, randomS
 	}
 
 	return r.Status().Update(ctx, randomSecret)
+}
+
+func (r *RandomSecretReconciler) deleteSecretResource(ctx context.Context, randomSecret *fancysecretsv1.RandomSecret) error {
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      randomSecret.Spec.SecretName,
+			Namespace: randomSecret.Namespace,
+		},
+	}
+
+	return r.Delete(ctx, secret)
 }
