@@ -80,11 +80,13 @@ func (r *RandomSecretReconciler) ensureSecretExists(ctx context.Context, randomS
 			secret.Data = make(map[string][]byte)
 		}
 
-		if _, exists := secret.Data["value"]; !exists {
+		value, exists := secret.Data["value"]
+		// If the length changes, we need to update the secret
+		correctLength := int32(len(string(value))) == randomSecret.Spec.Length
+		if !exists || !correctLength {
 			return setRandomData(secret, randomSecret.Spec.Length)
 		}
 
-		// TODO: Check if length changes and update if it does
 		return nil
 	})
 

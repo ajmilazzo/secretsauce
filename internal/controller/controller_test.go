@@ -87,5 +87,32 @@ var _ = Describe("RandomSecret controller", func() {
 
 			Expect(createdSecret.Data["value"]).Should(HaveLen(RandomSecretLength))
 		})
+
+		It("should update the Secret", func() {
+			_ = k8sClient.Create(ctx, randomSecret)
+
+			Expect(k8sClient.Get(ctx, randomSecretKey, createdRandomSecret)).Should(Succeed())
+
+			Eventually(func() error {
+				return k8sClient.Get(ctx, secretKey, createdSecret)
+			}, timeout, interval).Should(Succeed())
+
+			// Save the value of the secret
+			value := createdSecret.Data["value"]
+
+			// Update the RandomSecret
+			Expect(k8sClient.Get(ctx, randomSecretKey, createdRandomSecret)).Should(Succeed())
+			createdRandomSecret.Spec.Length = 20
+			Expect(k8sClient.Update(ctx, createdRandomSecret)).Should(Succeed())
+
+			// Wait for the Secret to be updated
+			Eventually(func() []byte {
+				_ = k8sClient.Get(ctx, secretKey, createdSecret)
+				return createdSecret.Data["value"]
+			}, timeout, interval).ShouldNot(Equal(value))
+
+			// Verify the length has changed
+			Expect(len(string(createdSecret.Data["value"]))).Should(Equal(20))
+		})
 	})
 })
